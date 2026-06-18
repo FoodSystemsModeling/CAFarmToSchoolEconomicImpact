@@ -1,0 +1,871 @@
+---
+title: "01.CA FTS - Farmer Interviews"
+format: html
+editor: visual
+---
+
+The California team interviewed 21 farmers from Cohort 3. The data was collected via Qualtrics and analyzed in this file.
+
+When reported profit and expense data, we drop GranteeID 159 did not answer the questions fully or accurately (n=20 for this section). We did keep their other responses.
+
+Notes from followups:
+
+- **Grantee 134**
+
+  - They stopped selling to direct schools and intermediated channels to focus on selling to schools during the grant period. You can see the reduction amounts in their response.
+  - To clarify the figures you requested, our sales decreased by approximately 20,000 for direct markets and around 10,000 for intermediated channels. The primary reason for these decreases was our pledge to supply schools exclusively for the duration of the grant. Additionally, much of our 2025 season was dedicated to expanding our farming operations, which resulted in fewer plants in the ground than usual.
+
+- Grantee 127
+
+  - What was the other sales line that you mentioned in this survey?
+    - We shifted some of our raisins from commodity sales (we historically have been part of the commodity market--we don't sell our raisins directly, but rather pool our raisins with many other growers, they all get processed at a huge plant and sold by a sales department we have no influence / nor conversation with -- the prices do not reflect our real costs).
+    - How much sales did you shift from that sales line to farm to school in both dollars and as a percent of total sales?
+      - We shifted about 18% of the 2025 crop by yield, but we haven't been able to sell the bulk of that yet because we are working on key infrastructure (thanks to the grant!!) -- raisins, as they are naturally preserved, do not need to be processed immediately (part of why we started our Farm to School journey with raisins, as opposed to stone fruit which must be consumed within a couple days of harvest), we sourced a free piece of equipment, but it's been a bumpy road to get it rehabilitated -- but we are undeterred! Still working on replacing parts and testing (we got one successful test run through before a part broke).
+      - If/when we are able to sell that about 18% of the crop yield, we could be looking at 9600 in gross sales.
+      - How does this compare to other sales (to our commodity sales channel)? our 2025 crop got devastated by rains -- though we delivered raisins to our commodity processor, we are actually predicted to gain ZERO profit (we may get checks back for about 3600, but that is for about 80% of our crop yield and far below our break-even costs/expenses).
+
+## Import data
+
+```{r}
+library(tidyverse)
+library(readxl)
+library(janitor)
+library(scales)
+
+# Import data
+df_cornell <- read_xlsx("../data_raw/Cohort 3 Farmer Interviews Cornell Deidentified.xlsx") %>% 
+  clean_names() %>%
+  slice(-1) 
+
+df_enviro <- read_xlsx("../data_raw/Cohort 3 Farmer Interviews Enviro Team Data for Cornell Deidentified.xlsx") %>%
+  clean_names() %>%
+  slice(-1)
+
+# Award amount
+award <- read_xlsx("../data_raw/C3_T4_application_deidentified.xlsx") %>%
+  clean_names() %>% 
+  summarise(sum(award_amount))
+
+
+```
+
+## Cohort 3 Farmer Interviews Cornell
+
+If respondents say "Yes" to Q3 (Did you complete the survey of producers who are 2024 grantees in Fall 2025?) then they did not answer Q_4 through Q_8. If they said "No" then they did answer this series of questions.
+
+In this section we focus on the answers to the survey questions that start with Q9.
+
+### Define variables
+
+```{r}
+
+# Drop farmer 159 as they did not fill out this section enough
+df <- df_cornell %>% 
+  filter(grantee_id != 159)
+
+# Select columns of interest
+df <- df %>% 
+  select(grantee_id, q9_1:last_col())
+
+# Make numeric
+df <- df %>% 
+  mutate(across(c(grantee_id:q13_9), 
+                ~as.numeric(.)))
+
+
+# Rename columns
+df <- df %>% 
+  mutate(
+    d2c_pct_sales = q9_1, 
+    retail_pct_sales = q9_2, 
+    institutions_pct_sales = q9_3, 
+    intermediate_markets_pct_sales = q9_4,
+    commodity_pct_sales = q9_5
+  )
+
+# Define sales and expenses
+df <- df %>% 
+  mutate(
+    sales = q10_1, 
+    variable_expense = q10_2, 
+    fixed_expense = q10_3,
+    farmrelated_income = q11_1, 
+    gov_payments = q11_2, 
+    production_contract = q11_3, 
+  )
+
+## Percent of variable expense
+df <- df %>% 
+  mutate(
+    livestock_pct_var = q12_1, 
+    feed_pct_var = q12_2, 
+    seedp_pct_var = q12_3,
+    fert_pct_var = q12_4,
+    fuelo_pct_var = q12_5,
+    mainr_pct_var = q12_6,
+    cwork_pct_var = q12_7,
+    util_pct_var = q12_8,
+    labor_pct_var = q12_9
+  )
+
+# Percent of variable expense in state
+df <- df %>% 
+  mutate(
+    livestock_pct_instate = q13_1, 
+    feed_pct_instate = q13_2, 
+    seedp_pct_instate = q13_3,
+    fert_pct_instate = q13_4,
+    fuelo_pct_instate = q13_5,
+    mainr_pct_instate = q13_6,
+    cwork_pct_instate = q13_7,
+    util_pct_instate = q13_8,
+    labor_pct_instate = q13_9
+  )
+```
+
+### Summarise
+
+#### Sales and expenses
+
+We define profit as net farm income, total farm income minus total expense. In this case, total farm income includes sales, government payments, farm-related income and production contract income.
+
+We report averages and also total farm income for the sector.
+
+```{r}
+
+# Define variable of interest
+varlist <- df %>% 
+  select(sales, 
+         variable_expense, fixed_expense,
+         farmrelated_income, gov_payments, 
+         production_contract) %>% 
+  names()
+
+# Total income for the whole sector
+sector_size <- df %>% 
+  mutate(
+    total_income = sales + gov_payments + farmrelated_income) %>%
+  summarise(sector_size = sum(total_income))
+
+# Summarise
+sum <- df %>% 
+  summarise(across(all_of(varlist), 
+                   ~mean(., na.rm = TRUE)))
+
+# Define totals and profit
+sum <- sum %>% 
+  mutate(
+    total_income = sales + gov_payments + farmrelated_income, 
+    total_expense = variable_expense + fixed_expense, 
+    profit = total_income - total_expense
+  ) %>% 
+  pivot_longer(
+    cols = everything(),
+    names_to = "variable", 
+    values_to = "value"
+  )
+  
+# Drop production contract income
+sum <- sum %>% 
+  filter(
+    variable != "production_contract"
+  )
+
+# Define categories of data
+sum <- sum %>% 
+  mutate(
+    category = case_when(
+      variable %in% c("sales", "gov_payments", 
+                      "total_sales", "farmrelated_income", 
+                      "total_income") ~ "Income", 
+      variable=="profit" ~ "Profit",
+      TRUE ~ "Expense"), 
+    category = factor(category, 
+                      levels = c("Income", "Expense", "Profit")), 
+    variable = factor(variable, 
+                      levels = c(
+                        "total_income",
+                        "sales", "gov_payments", 
+                        "farmrelated_income", 
+                        "total_expense", 
+                        "variable_expense", "fixed_expense", 
+                        "profit"))
+  )
+
+# Define totals
+total <- sum %>% 
+  filter(variable %in% c("total_income", "total_expense"))
+
+# Stacked bar chart
+ggplot(sum %>% 
+         filter(!variable %in% c("total_income", "total_expense")),
+       aes(x = category, y = value, 
+           fill = variable)) + 
+  geom_col(width = 0.5) + 
+  scale_fill_viridis_d(
+    begin = 0,
+    end = 0.9,
+    labels = c(
+      "sales" = "Total sales",
+      "gov_payments" = "Government payments", 
+      "variable_expense" = "Variable expense", 
+      "fixed_expense" = "Fixed expense",
+      "farmrelated_income" = "Farm related income", 
+      "profit" = "Profit")) +
+  geom_text(aes(label = comma(value)),
+            position = position_stack(vjust = 0.5),
+            color = "white"
+  ) +
+  geom_text(data = total, 
+            aes(x = category, y = value, 
+                label = comma(value)),
+            inherit.aes = FALSE, 
+            vjust = -0.18) +
+  scale_y_continuous(labels = comma) + 
+  labs(
+    y = "Income and expense ($)", 
+  ) + 
+  theme(
+    text = element_text(size = 12),
+    axis.ticks.x = element_blank(), 
+    legend.title = element_blank(), 
+    axis.title.x = element_blank(), 
+    legend.position = "bottom"
+  )
+  
+ggsave("../figures/sales_expense.png", 
+       height = 4, 
+       width = 8)
+
+# Total for the sector
+varlist <- df %>% 
+  select(sales, 
+         farmrelated_income, gov_payments, 
+         production_contract) %>% 
+  names()
+
+# Summarise
+sum <- df %>% 
+  summarise(across(all_of(varlist), 
+                   ~sum(., na.rm = TRUE)))
+
+# Define totals and profit
+sum <- sum %>% 
+  mutate(
+    total_income = sales + gov_payments + farmrelated_income) %>%
+  pull(total_income)
+
+```
+
+#### Percent variable expense
+
+We use this data for a chart and for our production function.
+
+```{r}
+
+# Define variables
+varlist <- df %>% 
+  select(ends_with("pct_var")) %>% 
+  names()
+
+# Summarise
+sum <- df %>% 
+  summarise(across(all_of(varlist), 
+                   ~mean(., na.rm = TRUE))) %>% 
+  pivot_longer(
+    cols = everything(),
+    names_to = "variable", 
+    values_to = "value"
+  )
+
+# Don't include categories <2% in figure
+sum <- sum %>% 
+  filter(value>2)
+
+# Horizontal stacked bar char
+ggplot(sum, 
+       aes(x = "", y = value, fill = variable)) + 
+  geom_col(width = 0.5) + 
+  coord_flip() + 
+  scale_fill_viridis_d(
+    begin = 0, 
+    end = 0.9,
+    labels = c(
+      "livestock_pct_var" = "Livestock",
+      "feed_pct_var" = "Feed", 
+      "seedp_pct_var" = "Plants/seeds", 
+      "fert_pct_var"  = "Fertilzer/chemicals", 
+      "fuelo_pct_var" = "Fuel/oil", 
+      "mainr_pct_var" = "Maintenance", 
+      "cwork_pct_var" = "Customwork", 
+      "util_pct_var"  = "Utilities", 
+      "labor_pct_var" = "Labor")
+  ) +
+  geom_text(aes(label = paste0(round(value, 0), "%")), 
+            position = position_stack(vjust = 0.5), 
+            color = "white"
+  ) + 
+  labs(
+    y = "Percent of variable expense", 
+    x = ""
+  ) + 
+  theme(
+    text = element_text(size = 12),
+    axis.ticks.y = element_blank(), 
+    legend.position = "bottom", 
+    legend.title = element_blank()
+  )
+  
+ggsave("../figures/variable_expense.png", 
+       height = 4, 
+       width = 8)
+
+```
+
+#### Percent in state
+
+What percent of variable expenses were spent to businesses or workers located in California.
+
+```{r}
+
+# Define variables
+varlist <- df %>% 
+  select(ends_with("pct_instate")) %>% 
+  names()
+
+# Summarise
+sum <- df %>% 
+  summarise(across(all_of(varlist), 
+                   ~mean(., na.rm = TRUE))) %>% 
+  pivot_longer(
+    cols = everything(),
+    names_to = "variable", 
+    values_to = "value"
+  )
+
+# Drop all NA 
+sum <- sum %>% 
+  filter(!is.nan(value))
+
+
+# Bar chart
+ggplot(sum, 
+       aes(x = variable, y = value, fill = variable)) + 
+  geom_col() + 
+  scale_fill_viridis_d(
+    begin = 0, 
+    end = 0.9,
+    labels = c(
+      "feed_pct_instate" = "Feed", 
+      "seedp_pct_instate" = "Plants/seeds", 
+      "fert_pct_instate"  = "Fertilzer/chemicals", 
+      "fuelo_pct_instate" = "Fuel/oil", 
+      "mainr_pct_instate" = "Maintenance", 
+      "cwork_pct_instate" = "Customwork", 
+      "util_pct_instate"  = "Utilities", 
+      "labor_pct_instate" = "Labor")
+  ) +
+  geom_text(aes(label = paste0(round(value, 0), "%")), 
+            position = position_stack(vjust = 0.5), 
+            color = "white"
+  ) + 
+  labs(
+    y = "Percent paid to in-state businesses", 
+    x = ""
+  ) + 
+  theme(
+    text = element_text(size = 12),
+    axis.text.x = element_blank(), 
+    axis.ticks.x = element_blank(),
+    legend.position = "bottom", 
+    legend.title = element_blank()
+  )
+  
+ggsave("../figures/varexpense_pct_in_state.png", 
+       height = 4, 
+       width = 8)
+
+```
+
+#### Market channel
+
+```{r}
+
+# Define variables of interest
+varlist <- df %>% 
+  select(ends_with("pct_sales")) %>%
+  names()
+
+# Summarise
+sum <- df %>% 
+  summarise(across(all_of(varlist), 
+                   ~mean(., na.rm = TRUE))) %>% 
+  pivot_longer(
+    cols = everything(),
+    names_to = "variable", 
+    values_to = "value"
+  )
+
+# Commodity sales are 0 do we drop from figure
+sum <- sum %>% 
+  filter(variable != "commodity_pct_sales")
+
+# Horizontal stacked bar char
+ggplot(sum, 
+       aes(x = "", y = value, fill = variable)) + 
+  geom_col(width = 0.5) + 
+  coord_flip() + 
+  scale_fill_viridis_d(
+    begin = 0, 
+    end = 0.9,
+    labels = c(
+      "d2c_pct_sales" = "Direct-to-consumer",
+      "retail_pct_sales" = "Retail",
+      "institutions_pct_sales" = "Institutions",
+      "intermediate_markets_pct_sales" = "Intermediate markets")
+  ) +
+  geom_text(aes(label = paste0(round(value, 0), "%")), 
+            position = position_stack(vjust = 0.5), 
+            color = "white"
+  ) + 
+  labs(
+    y = "Percent of sales", 
+    x = ""
+  ) + 
+  theme(
+    text = element_text(size = 12),
+    axis.ticks.y = element_blank(), 
+    legend.position = "bottom", 
+    legend.title = element_blank()
+  )
+  
+ggsave("../figures/market_channel.png", 
+       height = 4, 
+       width = 8)
+
+```
+
+## FTS Incubator Grant
+
+How did receiving money from the FTS incubator grant impact farmers choices. These data are in two different surveys, depending on the respondent.
+
+In df, if they responded "No" to Q3, then the data is in df for this set of questions. Otherwise, it is in df_environmental. We match on GranteeID.
+
+The FIG team followed up with a couple of farmers to ask clarifying questions.
+
+Grantee 127: - Selected "Other" for (Q144) How did the availability of the Farm to School incubator grant dollars affect your production for and/or sales to other markets? - They shifted sales from commodity markets (raisins) - There is no option for this choice so I left it as other - How much sales did you shift from that sales line to farm to school in both dollars and as a percent of total sales? - We shifted about 18% of the 2025 crop by yield, but we haven't been able to sell the bulk of that yet because we are working on key infrastructure - if / when we are able to sell that about 18% of the crop yield, we could be looking at \$9600 in gross sales.  - How does this compare to other sales (to our commodity sales channel)? - 2025 crop got devastated by rains -- though we delivered raisins to our commodity processor, we are actually predicted to gain ZERO profit (we may get checks back for about \$3600, but that is for about 80% of our crop yield and far below our break-even costs/expenses)
+
+Grantee 134: - To clarify the data: sales decreased by approximately 20,000 for direct markets and around 10,000 for intermediated channels.
+
+### Define variables
+
+The questions are asked the same in each survey, but recorded differently. Create new columns so data can be joined.
+
+##### Enivronmental data
+
+There are additional responses in this survey related to decreases in other sectors that are not in the other survey. Only one farm responded to this set of questions, so we are unlikely to use them.\
+Only one farm responded the amount by which they decreased sales to other market channels.
+
+```{r}
+
+# Change one response from Environmental data
+df_enviro <- df_enviro %>% 
+  mutate(
+    q146_1_6 = case_when(
+      grantee_id==134 ~ 20000, 
+      TRUE ~ as.numeric(q146_1_6)), 
+    q146_2_6 = case_when(
+      grantee_id==134 ~ 10000, 
+      TRUE ~ as.numeric(q146_2_6))
+    )
+
+# Rename columns for responses to FTS grant money
+df_enviro <- df_enviro %>% 
+  mutate(
+    response_to_grant = q144,
+    response_increased_production = case_when(
+      str_detect(response_to_grant, fixed("We increased production to accommodate (additional) school sales")) ~ 1, 
+      TRUE ~ 0), 
+    response_other = case_when(
+      str_detect(response_to_grant, fixed("Other")) ~ 1, 
+      TRUE ~ 0), 
+    response_firsts = case_when(
+      str_detect(response_to_grant, fixed("We lacked adequate market access for our firsts (e.g., highest quality products) before selling to schools (or before volume of school sales increased)")) ~ 1, 
+      TRUE ~ 0), 
+    response_seconds = case_when(
+      str_detect(response_to_grant, fixed("We lacked adequate market access for our seconds (e.g., farm to school create an opportunity to sell our seconds/ imperfect products) before selling to schools")) ~ 1, 
+      TRUE ~ 0),
+    response_decrease_direct = case_when(
+      str_detect(response_to_grant, fixed("We decreased sales to one or multiple direct markets (farmers’ markets, CSA, farm stand, etc.)")) ~ 1, 
+      TRUE ~ 0), 
+    response_decrease_intermediated = case_when(
+      str_detect(response_to_grant, fixed("We decreased sales to one or multiple intermediated markets (restaurants, retail, institutions, food hubs, etc.)")) ~ 1, 
+      TRUE ~ 0))
+
+
+# Make changes numeric
+df_enviro <- df_enviro %>% 
+  mutate(
+    q145_1_5 = str_remove(q145_1_5, "%"),
+    q145_2_5 = str_remove(q145_2_5, "%"), 
+    q145_2_4 = str_remove(q145_2_4, ",")
+  ) %>%
+  mutate(across(q145_1_4:q146_2_7, 
+         ~as.numeric(.))
+  )
+
+# How much production increased to sell to schools
+df_enviro <- df_enviro %>% 
+  mutate(
+    fts_acres_increase = q145_1_4, 
+    fts_dollars_increase = q145_2_4, 
+    fts_percent_acres_increase = q145_1_5, 
+    fts_percent_sales_increase = q145_2_5, 
+    direct_dollars_decrease = q146_1_6, 
+    direct_percent_sales_decrease = q146_1_7,
+    intermediate_dollars_decrease = q146_2_6,
+    intermediate_percent_sales_decrease = q146_2_7, 
+  )
+
+## Demand questions
+df_enviro <- df_enviro %>% 
+  mutate(
+    higher_price = case_when(
+      str_detect(q147, fixed("We get a higher price for the same or similar product(s)")) ~ 1, 
+      TRUE ~ 0), 
+    higher_costs = case_when(
+      str_detect(q147, fixed("We have higher costs associated with marketing, sales, and/or distribution expenses")) ~ 1, 
+      TRUE ~ 0), 
+    larger_volumes = case_when(
+      str_detect(q147, fixed("We are able to sell larger volumes of the same or similar product(s)")) ~ 1, 
+      TRUE ~ 0), 
+    new_products = case_when(
+      str_detect(q147, fixed("There is demand for new and/or additional product(s)")) ~ 1, 
+      TRUE ~ 0), 
+    lower_price = case_when(
+      str_detect(q147, fixed("We get a lower price for the same or similar product(s)")) ~ 1, 
+      TRUE ~ 0), 
+    lower_costs = case_when(
+      str_detect(q147, fixed("We have lower costs associated with marketing, sales, and/or distribution expenses")) ~ 1, 
+      TRUE ~ 0), 
+    smaller_volume = case_when(
+      str_detect(q147, fixed("We sell smaller volumes of the same or similar product(s)")) ~ 1, 
+      TRUE ~ 0), 
+    fewer_products = case_when(
+      str_detect(q147, fixed("There is demand for less/fewer product(s)")) ~ 1, 
+      TRUE ~ 0)
+  )
+
+# Select data of interest
+df_enviro <- df_enviro %>% 
+  select(grantee_id, response_to_grant:last_col())
+
+```
+
+#### Cornell data
+
+In this survey, there were no producers that responded to the amount by which they decreased production/sales to direct or intermediated markets as a result of their increased sales to schools.
+
+```{r}
+# Filter Cornell data and select data of interest
+df <- df_cornell %>% 
+  filter(q3 == "No") %>% 
+  select(grantee_id:q8_4)
+
+# Rename columns for responses to FTS grant money
+df <- df %>% 
+  mutate(
+    response_increased_production = case_when(
+      !is.na(q5_1) ~ 1, 
+      TRUE ~ 0),
+    response_other = case_when(
+      !is.na(q5_8) ~ 1, 
+      TRUE ~ 0), 
+    response_firsts = case_when(
+      !is.na(q5_5) ~ 1, 
+      TRUE ~ 0), 
+    response_seconds = case_when(
+      !is.na(q5_6) ~ 1, 
+      TRUE ~ 0),
+    response_decrease_direct = case_when(
+      !is.na(q5_2) ~ 1,  
+      TRUE ~ 0), 
+    response_decrease_intermediated = case_when(
+      !is.na(q5_3) ~ 1,  
+      TRUE ~ 0), 
+    response_newfarm = case_when(
+      !is.na(q5_7) ~ 1, 
+      TRUE ~ 0)
+  )
+
+# How much production increased to sell to schools
+df <- df %>% 
+  mutate(across(q6_1_1:q6_2_2, 
+         ~as.numeric(.))) %>%
+  mutate(
+    fts_acres_increase = q6_1_1, 
+    fts_dollars_increase = q6_1_2, 
+    fts_percent_acres_increase = q6_2_1, 
+    fts_percent_sales_increase = q6_2_2
+  )
+
+## Demand questions
+df <- df %>% 
+  mutate(
+    higher_price = case_when(
+      !is.na(q8_1) ~ 1,
+      TRUE ~ 0), 
+    larger_volumes = case_when(
+       !is.na(q8_3) ~ 1,
+      TRUE ~ 0), 
+    new_products = case_when(
+       !is.na(q8_4) ~ 1,
+      TRUE ~ 0), 
+    lower_costs = case_when(
+       !is.na(q8_2) ~ 1,
+      TRUE ~ 0)
+  )
+
+# Select data of interest
+df <- df %>% 
+  select(grantee_id,response_increased_production:last_col())
+
+```
+
+### Join data
+
+```{r}
+
+# Bind rows
+df <- bind_rows(df, df_enviro)
+
+# Fill NAs with zero
+#df <- df %>% 
+#  mutate(across(where(is.numeric), 
+#                ~case_when(is.na(.) ~ 0, 
+#                           TRUE ~ .))
+#  )
+
+```
+
+### Summarise
+
+#### Reponse to FTS Grant money
+
+```{r}
+
+# Response to FTS grant money
+varlist <- df %>% 
+  select(
+    response_increased_production, 
+    response_firsts:response_newfarm
+  ) %>% 
+  names()
+
+# Summarise
+sum <- df %>% 
+  summarise(across(all_of(varlist), 
+                   ~mean(., na.rm = TRUE))) %>% 
+  pivot_longer(
+    cols = everything(),
+    names_to = "variable", 
+    values_to = "value"
+  )
+
+
+# Bar chart
+ggplot(sum, 
+       aes(x = variable, y = value, fill = variable)) + 
+  geom_col() + 
+  scale_fill_viridis_d(
+    begin = 0, 
+    end = 0.9,
+    labels = c(
+      "response_increased_production" = "Increased production", 
+      "response_firsts" = "Lacked market for firsts", 
+      "response_seconds" = "Lacked market for seconds",               
+      "response_decrease_direct" = "Decreased D2C sales",
+      "response_decrease_intermediated" = "Decreased intermediated sales",
+      "response_newfarm" = "New farm")
+  ) +
+  geom_text(aes(label = percent(value)), 
+            position = position_stack(vjust = 0.5), 
+            color = "white"
+  ) + 
+  scale_y_continuous(
+    limits = c(0,1),
+    labels = percent_format(accuracy = 1)) + 
+  labs(
+    y = "Percent of respondents", 
+    x = ""
+  ) + 
+  theme(
+    text = element_text(size = 12),
+    axis.text.x = element_blank(), 
+    axis.ticks.x = element_blank(),
+    legend.position = "bottom", 
+    legend.title = element_blank()
+  )
+  
+ggsave("../figures/response_to_FTS_money.png", 
+       height = 4, 
+       width = 8)
+```
+
+#### Changes to sales and acres
+
+```{r}
+
+# Response to FTS grant money
+varlist <- df %>% 
+  select(
+    fts_acres_increase,
+    fts_dollars_increase, 
+    fts_percent_acres_increase, 
+    fts_percent_sales_increase
+  ) %>% 
+  names()
+
+# Summarise
+sum <- df %>% 
+  summarise(across(all_of(varlist), 
+                   ~mean(., na.rm = TRUE))) %>% 
+  pivot_longer(
+    cols = everything(),
+    names_to = "variable", 
+    values_to = "value"
+  )
+
+# Divide dollars by 1,000
+sum <- sum %>% 
+  mutate(
+    value = case_when(
+      variable == "fts_dollars_increase" ~ value/1000, 
+      TRUE ~ value)
+  )
+
+# Bar chart - Percent
+ggplot(sum %>% 
+         filter(str_detect(variable, "percent")),
+       aes(x = variable, y = value, fill = variable))  +
+  geom_col(width = 0.7) +
+  scale_fill_viridis_d(
+    begin = 0, 
+    end = 0.9,
+    labels = c(
+      "fts_percent_acres_increase" = "Acres", 
+      "fts_percent_sales_increase" = "Sales")
+  ) +
+  geom_text(aes(label = paste0(round(value, 0), "%")), 
+            position = position_stack(vjust = 0.5), 
+            color = "white"
+  ) + 
+  scale_y_continuous(limits = c(0,100)) + 
+  labs(
+    y = "Percent increase", 
+    x = ""
+  ) + 
+  theme(
+    text = element_text(size = 12),
+    axis.text.x = element_blank(), 
+    axis.ticks.x = element_blank(),
+    legend.position = "bottom", 
+    legend.title = element_blank()
+  )
+  
+ggsave("../figures/fts_pct_increase.png", 
+       height = 4, 
+       width = 8)
+
+# Bar chart - Totals
+ggplot(sum %>% filter(!str_detect(variable, "percent")),
+       aes(x = variable, y = value, fill = variable))  +
+  geom_col(width = 0.7) +
+  scale_fill_viridis_d(
+    begin = 0, 
+    end = 0.9,
+    labels = c(
+      "fts_acres_increase" = "Acres", 
+      "fts_dollars_increase" = "Sales")
+  ) +
+  geom_text(aes(label = c("1", "$6,000")), 
+            position = position_stack(vjust = 0.5), 
+            color = "white"
+  ) + 
+  labs(
+    y = "Acres or Sales($1,000) increase", 
+    x = ""
+  ) + 
+  theme(
+    text = element_text(size = 12),
+    axis.text.x = element_blank(), 
+    axis.ticks.x = element_blank(),
+    legend.position = "bottom", 
+    legend.title = element_blank()
+  )
+  
+ggsave("../figures/fts_acres_sales_increase.png", 
+       height = 4, 
+       width = 8)
+```
+
+#### Compared to other markets
+
+```{r}
+
+# Response to FTS grant money
+varlist <- df %>% 
+  select(
+   
+  ) %>% 
+  names()
+
+# Summarise
+sum <- df %>% 
+  summarise(across(all_of(varlist), 
+                   ~mean(., na.rm = TRUE))) %>% 
+  pivot_longer(
+    cols = everything(),
+    names_to = "variable", 
+    values_to = "value"
+  )
+
+
+# Bar chart
+ggplot(sum, 
+       aes(x = variable, y = value, fill = variable)) + 
+  geom_col() + 
+  scale_fill_viridis_d(
+    begin = 0, 
+    end = 0.9,
+    labels = c(
+      "response_increased_production" = "Increased production", 
+      "response_firsts" = "Lacked market for firsts", 
+      "response_seconds" = "Lacked market for seconds",               
+      "response_decrease_direct" = "Decreased D2C sales",
+      "response_decrease_intermediated" = "Decreased intermediated sales",
+      "response_newfarm" = "New farm")
+  ) +
+  geom_text(aes(label = percent(value)), 
+            position = position_stack(vjust = 0.5), 
+            color = "white"
+  ) + 
+  scale_y_continuous(
+    limits = c(0,1),
+    labels = percent_format(accuracy = 1)) + 
+  labs(
+    y = "Percent of respondents", 
+    x = ""
+  ) + 
+  theme(
+    text = element_text(size = 12),
+    axis.text.x = element_blank(), 
+    axis.ticks.x = element_blank(),
+    legend.position = "bottom", 
+    legend.title = element_blank()
+  )
+  
+ggsave("../figures/.png", 
+       height = 4, 
+       width = 8)
+```

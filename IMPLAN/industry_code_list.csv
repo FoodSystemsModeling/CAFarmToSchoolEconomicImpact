@@ -1,0 +1,112 @@
+PayingCode,PayingDescription
+1,111 -  Crop Production
+2,112 -  Animal Production and Aquaculture
+3,113 -  Forestry and Logging
+4,"114 -  Fishing, Hunting and Trapping"
+5,115 -  Support Activities for Agriculture and Forestry
+6,211 -  Oil and Gas Extraction
+7,212 -  Mining (except Oil and Gas)
+8,213 -  Support Activities for Mining
+9,221 -  Utilities
+10,23 -  Construction
+11,311 -  Food Manufacturing
+12,312 -  Beverage and Tobacco Product Manufacturing
+13,313 -  Textile Mills
+14,314 -  Textile Product Mills
+15,315 -  Apparel Manufacturing
+16,316 -  Leather and Allied Product Manufacturing
+17,321 -  Wood Product Manufacturing
+18,322 -  Paper Manufacturing
+19,323 -  Printing and Related Support Activities
+20,324 -  Petroleum and Coal Products Manufacturing
+21,325 -  Chemical Manufacturing
+22,326 -  Plastics and Rubber Products Manufacturing
+23,327 -  Nonmetallic Mineral Product Manufacturing
+24,331 -  Primary Metal Manufacturing
+25,332 -  Fabricated Metal Product Manufacturing
+26,333 -  Machinery Manufacturing
+27,334 -  Computer and Electronic Product Manufacturing
+28,"335 -  Electrical Equipment, Appliance, and Component Manufacturing"
+29,336 -  Transportation Equipment Manufacturing
+30,337 -  Furniture and Related Product Manufacturing
+31,339 -  Miscellaneous Manufacturing
+32,42 -  Wholesale Trade
+33,441 -  Motor Vehicle and Parts Dealers
+34,"449 -  Furniture, Home Furnishings, Electronics, and Appliance Retailers"
+35,444 -  Building Material and Garden Equipment and Supplies Dealers
+36,445 -  Food and Beverage Stores
+37,446 -  Health and Personal Care Stores
+38,457 -  Gasoline Stations and Fuel Dealers
+39,"458 -  Clothing, Clothing Accessories, Shoe, and Jewelry Retailers"
+40,"459 -  Sporting Goods, Hobby, Musical Instrument, Book, and Miscellaneous Retailers"
+41,455 -  General Merchandise Retailers
+42,481 -  Air Transportation
+43,482 -  Rail Transportation
+44,483 -  Water Transportation
+45,484 -  Truck Transportation
+46,485 -  Transit and Ground Passenger Transportation
+47,486 -  Pipeline Transportation
+48,487-488 -  Scenic and Sightseeing Transportation and Support Activities for Transportation
+49,492 -  Couriers and Messengers
+50,493 -  Warehousing and Storage
+51,513 -  Publishing Industries
+52,512 -  Motion Picture and Sound Recording Industries
+53,516 -  Broadcasting and Content Providers
+54,517 -  Telecommunications
+55,"518 -  Computing Infrastructure Providers, Data Processing, Web Hosting, and Related Services"
+56,"519 -  Web Search Portals, Libraries, Archives, and Other Information Services"
+57,522 -  Credit Intermediation and Related Activities
+58,"523 -  Securities, Commodity Contracts, and Other Financial Investments and Related Activities"
+59,521 -  Monetary Authorities-Central Bank
+60,524 -  Insurance Carriers and Related Activities
+61,"525 -  Funds, Trusts, and Other Financial Vehicles"
+62,531 -  Real Estate
+63,532 -  Rental and Leasing Services
+64,533 -  Lessors of Nonfinancial Intangible Assets (except Copyrighted Works)
+65,"541 -  Professional, Scientific, and Technical Services"
+66,551 -  Management of Companies and Enterprises
+67,561 -  Administrative and Support Services
+68,562 -  Waste Management and Remediation Services
+69,611 -  Educational Services
+70,621 -  Ambulatory Health Care Services
+71,622 -  Hospitals
+72,623 -  Nursing and Residential Care Facilities
+73,624 -  Social Assistance
+74,"711 -  Performing Arts, Spectator Sports, and Related Industries"
+75,"712 -  Museums, Historical Sites, and Similar Institutions"
+76,"713 -  Amusement, Gambling, and Recreation Industries"
+77,721 -  Accommodation
+78,722 -  Food Services and Drinking Places
+79,811 -  Repair and Maintenance
+80,812 -  Personal and Laundry Services
+81,"813 -  Religious, Grantmaking, Civic, Professional, and Similar Organizations"
+82,814 -  Private Households
+83,9A -  Government Enterprises
+85,9B -  Administrative Government
+86,Vegetable and melon farming
+87,Fruit farming
+5001,Employee Compensation
+6001,Proprietor Income
+7001,Other Property Type Income
+8001,Tax on Production and Imports
+10001,Households LT15k
+10002,Households 15-30k
+10003,Households 30-40k
+10004,Households 40-50k
+10005,Households 50-70k
+10006,Households 70-100k
+10007,Households 100-150k
+10008,Households 150-200k
+10009,Households GT200k
+11001,Federal Government NonDefense
+11002,Federal Government Defense
+11003,Federal Government Investment
+12001,State/Local Govt Other
+12002,State/Local Govt Education
+12003,State/Local Govt Hospital and Health
+12004,State/Local Govt Investment
+13001,Enterprises (Corporations)
+14001,Capital
+14002,Inventory Additions/Deletions
+25001,Foreign Trade
+28001,Domestic Trade
