@@ -444,6 +444,146 @@ ggsave("../figures/market_channel.png",
        width = 8)
 
 ```
+#### Income
+Here we show all the sources of farm income, including the breakdown of sales by market channel, all in one figure. We want these numbers as totals across the whole sector, not averages. 
+
+We drop production contracts for the figure because they are less than 1 percent of total farm income. 
+
+```{r}
+
+# Total income by source and overall
+income <- df %>% 
+  select(sales, farmrelated_income, gov_payments, 
+         production_contract) %>%
+  summarise(across(everything(), 
+                   ~sum(.))) %>% 
+  mutate(
+    total_income = rowSums(select(., everything()))
+  )
+
+# Pull total income to be denominator in calcualating percentages
+total_income <- income %>% 
+  pull(total_income)
+
+# Market channel - multiply percent by total sales to get total sales by market channel for each respondend
+mc <- df %>% 
+  select(sales, ends_with("pct_sales"), -commodity_pct_sales) %>%
+  mutate(
+    d2c_sales = (d2c_pct_sales/100)*sales, 
+    retail_sales = (retail_pct_sales/100)*sales, 
+    intermediate_markets_sales = (intermediate_markets_pct_sales/100)*sales, 
+    institutions_sales = (institutions_pct_sales/100)*sales
+  ) %>% 
+  select(-ends_with("pct_sales"))
+
+# Get totals
+mc <- mc %>% 
+  summarise(across(everything(), 
+                   ~sum(.)))
+
+# Get percentages of total income and drop totals
+mc <- mc %>%
+  mutate(across(d2c_sales:institutions_sales, 
+                   ~./total_income, 
+                   .names = "{.col}_pct")
+  ) %>% 
+  select(ends_with("pct"))
+
+# Pivot longer
+mc <- mc %>% 
+  pivot_longer(
+    cols = everything(), 
+    names_to = "variable", 
+    values_to = "value"
+  )
+
+## Income - not including sales
+# Define variable of interest
+varlist <- df %>% 
+  select(farmrelated_income, gov_payments, 
+         production_contract) %>% 
+  names()
+
+# Summarise
+income <- df %>% 
+  summarise(across(all_of(varlist), 
+                   ~sum(., na.rm = TRUE)))
+
+# Get percentages of total income and drop totals
+income <- income %>%
+  mutate(across(farmrelated_income:production_contract, 
+                   ~./total_income, 
+                   .names = "{.col}_pct")
+  ) %>% 
+  select(ends_with("pct"))
+
+# Pivot longer
+income <- income %>% 
+  pivot_longer(
+    cols = everything(), 
+    names_to = "variable", 
+    values_to = "value"
+  )
+
+# combine
+sum <- income %>% 
+  bind_rows(mc)
+
+# Make sale by 100 and refactor
+sum <- sum %>% 
+  mutate(
+    value = value*100, 
+    variable = factor(variable, 
+                      levels = c(
+                        "farmrelated_income_pct", 
+                        "gov_payments_pct", 
+                        "d2c_sales_pct", 
+                        "retail_sales_pct", 
+                        "intermediate_markets_sales_pct", 
+                        "institutions_sales_pct"))
+  )
+
+# Drop production contract
+sum <- sum %>% 
+  filter(variable != "production_contract_pct")
+
+# Horizontal stacked bar char
+ggplot(sum, 
+       aes(x = "", y = value, fill = variable)) + 
+  geom_col(width = 0.5) + 
+  coord_flip() + 
+  scale_fill_viridis_d(
+    begin = 0, 
+    end = 0.9,
+    labels = c(
+      "farmrelated_income_pct" = "Farm related", 
+      "gov_payments_pct" = "Government payments", 
+      "production_contract_pct" = "Production contract", 
+      "d2c_sales_pct" = "Direct-to-consumer",
+      "retail_sales_pct" = "Retail",
+      "institutions_sales_pct" = "Institutions",
+      "intermediate_markets_sales_pct" = "Intermediate markets")
+  ) +
+  geom_text(aes(label = paste0(round(value, 0), "%")), 
+            position = position_stack(vjust = 0.5), 
+            color = "white"
+  ) + 
+  labs(
+    y = "Percent of income", 
+    x = ""
+  ) + 
+  theme(
+    text = element_text(size = 12),
+    axis.ticks.y = element_blank(), 
+    legend.position = "bottom", 
+    legend.title = element_blank()
+  )
+  
+ggsave("../figures/pct_income_by_source.png", 
+       height = 4, 
+       width = 8)
+
+```
 
 ## FTS Incubator Grant
 
