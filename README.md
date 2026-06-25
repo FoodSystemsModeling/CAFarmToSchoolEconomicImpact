@@ -18,7 +18,7 @@ Results from the project will inform policy by:
 - Improving understanding of the types of operations that benefit from the current program.
 - Demonstrating how program spending circulates through California's economy.
 
-This repository contains the issue brief, which provides a high level description of the study and results, detailed methodology, and relevant data.
+This repository contains the issue brief, which provides a high level description of the study and results, detailed methodology, and relevant data. It can all be found in the bookADD.
 
 ## Authors
 
