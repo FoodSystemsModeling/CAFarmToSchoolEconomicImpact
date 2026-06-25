@@ -15,6 +15,7 @@
 
 # Select code files
 ca_fts_farmer_interviews.qmd
+implan.qmd
 
 # Data files
 data_raw/
