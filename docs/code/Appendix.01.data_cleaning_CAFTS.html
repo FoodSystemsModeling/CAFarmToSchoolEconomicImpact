@@ -231,9 +231,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
+<p>These code are provided to see how data was coded. Note that all code here refers to the restricted access Census of Agriculture data. While exported data that has been approved by the U.S. Department of Agriculture, National Agricultural Statistics Service (USDA NASS) can be shared publicly (<a href="https://github.com/FoodSystemsModeling/CAFarmToSchoolEconomicImpact/blob/main/public_data/summary_CAFTS_obj1.xlsx">see public data folder</a>), the original data cannot.</p>
 <section id="import-and-filter-data" class="level2" data-number="A.1">
 <h2 data-number="A.1" class="anchored" data-anchor-id="import-and-filter-data"><span class="header-section-number">A.1</span> Import and filter data</h2>
-<p>We use data from the 2012-2022 Census of Agriculture in California. Our final sample of farms is fruit and vegetable producers (defined by primary commodity) with gross cash farm income less than $350,000.</p>
+<p>We use data from the 2022 Census of Agriculture in California. Our final sample of farms is fruit and vegetable producers (defined by primary commodity) with gross cash farm income less than $500,000. Please contact author for additional code with variable definitions.</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(srvyr)</span>

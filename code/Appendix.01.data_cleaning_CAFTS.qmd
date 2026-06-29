@@ -1,7 +1,9 @@
 # Data Cleaning
+These code are provided to see how data was coded. Note that all code here refers to the restricted access Census of Agriculture data. While exported data that has been approved by the U.S. Department of Agriculture, National Agricultural Statistics Service (USDA NASS) can be shared publicly ([see public data folder](https://github.com/FoodSystemsModeling/CAFarmToSchoolEconomicImpact/blob/main/public_data/summary_CAFTS_obj1.xlsx)), the original data cannot.
+
 ## Import and filter data
 
-We use data from the 2012-2022 Census of Agriculture in California. Our final sample of farms is fruit and vegetable producers (defined by primary commodity) with gross cash farm income less than \$350,000.
+We use data from the 2022 Census of Agriculture in California. Our final sample of farms is fruit and vegetable producers (defined by primary commodity) with gross cash farm income less than \$500,000. Please contact author for additional code with variable definitions.  
 
 ```{r}
 
