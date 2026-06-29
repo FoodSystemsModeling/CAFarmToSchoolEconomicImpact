@@ -1,0 +1,156 @@
+# Summary Statistics
+
+We provide summary stats for Objective #1 of the grant, where we are using Census of Ag data to act as a control group for the group of farmers that received money from the CA FTS grant program. Our goal is to define a set of farmers that is most similar to the grantees and provide data on variable expenses and profitabilty. These data will be used to estimate the economic impact of the program.
+
+## Import data
+
+Imported data is already our final data frame, CA farms with primary commodity fruit/veg with sales less than \$5000,000 (defined in data_cleaning.qmd)
+
+We only want to keep 2022 data for this portion of the analysis as well as those with climate smart practices, defined as having at least 4 climate smart practices, and sales through local food marketing channels.
+
+```{r}
+library(tidyverse)
+library(openxlsx)
+library(srvyr)
+library(broom)
+
+rm(list=ls())
+
+# Import data
+load("../data_processed/ca_fts.RData")
+
+# Keep 2022, local food producers
+df <- df %>% 
+  filter(year == 2022 &
+           local_farm == 1)
+
+# load functions
+source("P:/pr-usda-nass-jablonski-csu23-coaarmslf/general/mean_se_function.R")
+
+# Make survey
+df <- df %>% 
+  as_survey(weight = weight)
+
+# Create workbook
+wb <- createWorkbook()
+```
+
+## Summary stats
+
+Here we provide data on the percent of variable expense for each expenditure so we can create a customized production function in IMPLAN for objective 1. We also include data on sales and profit.
+
+We provide the data when climate smart is defined as at least 3 practices and at least 4.
+
+```{r}
+
+# Define climate smart for 3 and 4 practices
+df <- df %>% 
+  mutate(
+    climate_smart5 = case_when(
+      climate_smart_number>=5 ~ 1, 
+      TRUE ~ 0), 
+    climate_smart4 = case_when(
+      climate_smart_number>=4 ~ 1, 
+      TRUE ~ 0), 
+    climate_smart3 = case_when(
+      climate_smart_number>=3 ~ 1, 
+      TRUE ~ 0), 
+    climate_smart2 = case_when(
+      climate_smart_number>=2 ~ 1, 
+      TRUE ~ 0), 
+    climate_smart1 = case_when(
+      climate_smart_number>=1 ~ 1, 
+      TRUE ~ 0) 
+    )
+
+# Define total income from farm related sources
+df <- df %>% 
+  mutate(
+    income_farm_related_sources = cwork_income +
+      cashrent_income + forestproduct_income + 
+      coop_dividends + insurance_income + 
+      otherag_income)
+
+# Define sales under production contract
+df <- df %>% 
+  mutate(
+    sales_upc = k1367
+  )
+
+# Define pincome
+df <- df %>% 
+  mutate(
+    pincome = 25000 + (0.05 * tvp)
+  )
+
+# Define varlist
+varlist <- df$variables %>%
+  select(tvp, infi,
+         income_farm_related_sources,
+         gov_payments_all, sales_upc,
+         d2c_tvp, retail_tvp, institution_tvp, 
+         intermediate_market_tvp, intermediated_tvp,
+         totfixedexp, totfixedexp_alt, 
+         fert_chemical, 
+         seedp, animalpurchase, feed, 
+         fuelo, util, mainr, labor, cwork, 
+         fert_chemical_alt_var_pct, 
+         totvarexp_alt,
+         seedp_alt_var_pct, animalpurchase_alt_var_pct, 
+         feed_alt_var_pct, fuelo_alt_var_pct, 
+         util_alt_var_pct, mainr_alt_var_pct, 
+         labor_alt_var_pct, cwork_alt_var_pct, 
+         pincome) %>% 
+  names()
+
+# Define groupbylist
+groupbylist <- "climate_smart3"
+
+# Mean/se for 4 or more practices
+sum3 <- mean_se_function(df, varlist, groupbylist)  %>% 
+  filter(climate_smart3==1) %>%
+  select(!climate_smart3) %>%
+  mutate(climate_smart = "At least 3 practices")
+
+# Define groupbylist
+groupbylist <- "climate_smart4"
+
+# Mean/se for 4 or more practices
+sum4 <- mean_se_function(df, varlist, groupbylist) %>% 
+  filter(climate_smart4==1) %>%
+  select(!climate_smart4) %>%
+  mutate(climate_smart = "At least 4 practices") 
+
+
+# Bind rows
+sum <- bind_rows(sum3, sum4) %>% 
+  select(climate_smart, everything())
+
+rm(sum3, sum4)
+
+# Add worksheet
+addWorksheet(wb, "summary")
+writeData(wb, "summary", sum)
+
+```
+
+## Save
+
+```{r}
+
+# Add info
+info <- tibble(
+  sheet_name = c("summary"), 
+  description = c("summary stats"), 
+  source = "2022 Census of Agriculture", 
+  sample = "California fruit/veg producers with less than $500,000 in sales")
+
+# Add worksheet 
+addWorksheet(wb, "info")
+writeData(wb, "info", info)
+
+# Save Workbook# Save infoWorkbook
+saveWorkbook(wb, "../data_final/summary_CAFTS_obj1.xlsx", 
+             overwrite = TRUE)
+
+```

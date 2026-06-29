@@ -1,0 +1,139 @@
+# Data Cleaning
+## Import and filter data
+
+We use data from the 2012-2022 Census of Agriculture in California. Our final sample of farms is fruit and vegetable producers (defined by primary commodity) with gross cash farm income less than \$350,000.
+
+```{r}
+
+library(tidyverse)
+library(srvyr)
+
+# Import 2022 data
+load("P:/pr-usda-nass-jablonski-csu23-coaarmslf/general/data_processed/coa_22.RData")
+
+# Keep CA only
+coa_22 <- coa_22$variables %>% 
+  filter(state_abbr == "CA")
+
+# Import 2007-2017 data
+load("P:/pr-usda-nass-jablonski-csu23-coaarmslf/general/data_processed/coa_071217.RData")
+
+# Drop 2007 data
+coa <- coa$variables %>% 
+  filter(state_abbr == "CA" & 
+           year!=2007)
+
+# Bind rows
+df <- bind_rows(coa, coa_22)
+
+rm(coa, coa_22)
+
+# Keep farms with less than $500,000 in sales
+df <- df %>% 
+  filter(tvp<500000)
+
+# Define farms with primary commodity fruit/veg
+df <- df %>% 
+  filter(fruitveg==1)
+
+```
+
+### Define variables
+
+**Climate smart practices**
+
+From the 2023-24 RFA for the project, climate smart practices include (but are not limited to)
+
+- cover cropping
+- no or reduced till
+- hedgerow plantings
+- compost application
+- prescribed grazing
+- certified organic or transitioning, including organic production not certified or exempt
+
+```{r}
+
+# Define number of practices that is our cutoff for being defined as climate smart
+cutoff <- 4
+
+# Aggregate no and reduced till into one practice
+df <- df %>% 
+  mutate(
+    no_or_reduced_till = case_when(
+      no_till==1 | reduced_till==1 ~ 1, 
+      TRUE ~ 0)
+    )
+
+# List climate smart variables
+climate_smart_vars <- df %>% 
+  select(
+    cover_crop, no_or_reduced_till, 
+    alley_cropping, manure,
+    rotational_grazing, organic_farm
+  ) %>% 
+  names()
+
+# Define the number of climate smart practices
+df <- df %>% 
+  mutate(
+    climate_smart_number = rowSums(select(., all_of(climate_smart_vars))
+  ))
+
+# Define climate smart dummy variable
+df <- df %>% 
+  mutate(
+    climate_smart = case_when(
+      climate_smart_number >= cutoff ~ 1, 
+      TRUE ~ 0),
+    climate_smart_fct = case_when(
+      climate_smart == 1 ~ "At least 4 climate smart practices", 
+      climate_smart ==0 ~ "Less than 4 climate smart practices")
+  )
+
+```
+
+### Save
+
+```{r}
+
+save(df,file =  "../data_processed/ca_fts.RData")
+
+```
+
+## Data exploration
+
+Here we want to understand if the number of practices are associated with profit or expenses for our main sample of interest (2022, local food sales).
+
+```{r}
+library(broom)
+
+# Define data of interest
+df <- df %>%
+  filter(year==2022 & local_farm==1)
+
+
+# Regression profit
+results <- lm(infi ~ climate_smart_number + sales_class, 
+              weight = weight, 
+              data = df)
+
+tidy(results)
+
+# Regression variable expenses
+# Define list of variable expenses to loop through
+varlist <- df %>% 
+  select(totvarexp_alt,
+         seedp_alt_var_pct, animalpurchase_alt_var_pct, 
+         feed_alt_var_pct, fuelo_alt_var_pct, 
+         util_alt_var_pct, mainr_alt_var_pct, 
+         labor_alt_var_pct, cwork_alt_var_pct) %>% 
+  names()
+
+
+results <- lm(cwork_alt_var_pct ~ climate_smart_number + sales_class, 
+              weight = weight, 
+              data = df)
+
+tidy(results)
+
+```

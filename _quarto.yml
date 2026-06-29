@@ -4,7 +4,7 @@ project:
 	
 book:
   title: "Estimating the Economic Impacts of California’s Farm to School Incubator Grant Program"
-  authors: "Becca B.R. Jablonski, Allie Bauman, and Becca Ford"
+  author: "Becca B.R. Jablonski, Allie Bauman, and Becca Ford"
   #cover-image: images/cover.png
   date: "June 2026"
   favicon: images/favicon.png
@@ -16,6 +16,11 @@ book:
     - index.qmd
     - code/issue_brief.qmd
     - code/methods.qmd
+
+  appendices:
+    - code/Appendix.01.data_cleaning_CAFTS.qmd
+    - code/Appendix.02.summary_stats_objective1_CAFTS.qmd
+    
 
 bibliography: references.bib
 
