@@ -4,7 +4,7 @@ We provide summary stats for Objective #1 of the grant, where we are using Censu
 
 ## Import data
 
-Imported data is already our final data frame, CA farms with primary commodity fruit/veg with sales less than \$5000,000 (defined in data_cleaning.qmd)
+Imported data is already our final data frame, CA farms with primary commodity fruit/veg with sales less than \$500,000 (defined in data_cleaning.qmd)
 
 We only want to keep 2022 data for this portion of the analysis as well as those with climate smart practices, defined as having at least 4 climate smart practices, and sales through local food marketing channels.
 
